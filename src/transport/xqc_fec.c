@@ -3,7 +3,13 @@
  * @copyright Copyright (c) 2022, Alibaba Group Holding Limited
  */
 
-
+/**
+ * xqc_fec.c-管理：
+ *  FEC 方案的注册、协商和选择
+ *  FEC 控制器的生命周期管理
+ *  数据包的 FEC 编码/解码处理
+ *  修复包的生成和发送
+*/
 #include "src/transport/xqc_fec.h"
 #include "src/transport/xqc_fec_scheme.h"
 #include "src/transport/xqc_conn.h"
@@ -14,6 +20,7 @@
 #define XQC_FEC_MAX_SCHEME_VAL  32
 #define MAX_FEC_CODE_RATE      (20)
 
+// 注册编码器接口
 xqc_int_t
 xqc_set_valid_encoder_scheme_cb(xqc_fec_code_callback_t *callback, xqc_int_t scheme)
 {
@@ -43,7 +50,7 @@ xqc_set_valid_encoder_scheme_cb(xqc_fec_code_callback_t *callback, xqc_int_t sch
 
     return -XQC_EFEC_SCHEME_ERROR;
 }
-
+//注册解码器接口
 xqc_int_t
 xqc_set_valid_decoder_scheme_cb(xqc_fec_code_callback_t *callback, xqc_int_t scheme)
 {
@@ -223,7 +230,7 @@ xqc_fec_object_compare(xqc_fec_object_t *obj, unsigned char *cmp_buff)
     obj_buff = obj->payload;
     return xqc_memcmp(obj_buff, cmp_buff, obj_size) == 0 ? XQC_TRUE : XQC_FALSE;
 }
-
+//FEC 编码处理-提前发送修复包
 xqc_int_t
 xqc_send_repair_packets_ahead(xqc_connection_t *conn, xqc_list_head_t *prev, uint8_t fec_bm_mode)
 {
@@ -267,6 +274,7 @@ xqc_send_repair_packets_ahead(xqc_connection_t *conn, xqc_list_head_t *prev, uin
     return XQC_OK;
 }
 
+//FEC 编码处理-生成并发送修复包
 xqc_int_t
 xqc_send_repair_packets(xqc_connection_t *conn, xqc_fec_schemes_e scheme, xqc_list_head_t *prev,
     uint8_t fec_bm_mode)
@@ -293,6 +301,7 @@ xqc_send_repair_packets(xqc_connection_t *conn, xqc_fec_schemes_e scheme, xqc_li
         return -XQC_EFEC_SYMBOL_ERROR;
     }
 
+    //FEC方案生成修复包的实现
     switch (scheme) {
     case XQC_REED_SOLOMON_CODE:
     case XQC_XOR_CODE:
@@ -368,6 +377,7 @@ xqc_check_fec_params(xqc_connection_t *conn, xqc_int_t src_symbol_num, xqc_int_t
 }
 
 /* process fec protected packet with stream mode */
+// FEC 编码处理-处理 FEC 保护的数据包
 xqc_int_t
 xqc_process_fec_protected_packet(xqc_connection_t *conn, xqc_packet_out_t *packet_out)
 {
@@ -400,6 +410,7 @@ xqc_process_fec_protected_packet(xqc_connection_t *conn, xqc_packet_out_t *packe
     }
 
     /* FEC encoder */
+    // 调用xqc_fec_scheme.c => xqc_fec_encoder => xqc_dec_encode(fec方案具体实现)
     ret = xqc_fec_encoder(conn, packet_out->po_payload, payload_len, fec_bm_mode);
     if (ret != XQC_OK) {
         xqc_log(conn->log, XQC_LOG_ERROR, "|quic_fec|xqc_fec_encoder error|");
@@ -409,7 +420,9 @@ xqc_process_fec_protected_packet(xqc_connection_t *conn, xqc_packet_out_t *packe
 
     conn->fec_ctl->fec_send_symbol_num[fec_bm_mode] += 1;
     /* Try to generate repair packets, only succeed when send_symbol_numbers satisfy the limits */
+    // 3. 当源符号数量达到阈值时，生成修复包
     if (conn->fec_ctl->fec_send_symbol_num[fec_bm_mode] == max_src_symbol_num) {
+        // 生成修复包
         ret = xqc_send_repair_packets(conn, conn->conn_settings.fec_params.fec_encoder_scheme, &packet_out->po_list, fec_bm_mode);
         if (ret != XQC_OK) {
             xqc_log(conn->log, XQC_LOG_ERROR, "|quic_fec|xqc_send_repair_packets error: %d|", ret);
@@ -547,9 +560,11 @@ xqc_gen_src_payload_id(xqc_fec_ctl_t *fec_ctl, uint64_t *payload_id, uint8_t bm_
     return XQC_OK;
 }
 
+//FEC 控制器管理-创建 FEC 控制器
 xqc_fec_ctl_t *
 xqc_fec_ctl_create(xqc_connection_t *conn)
 {
+    printf("__________________xqc_fec_ctl_create() triggered");
     xqc_int_t       i, j;
     uint32_t        repair_num;
     xqc_fec_ctl_t  *fec_ctl = NULL;
@@ -620,6 +635,7 @@ process_emalloc:
     return NULL;
 }
 
+//FEC 控制器管理-销毁 FEC 控制器
 void
 xqc_fec_ctl_destroy(xqc_fec_ctl_t *fec_ctl)
 {
@@ -714,6 +730,7 @@ xqc_fec_ctl_save_symbol(unsigned char **symbol_buff_addr, const unsigned char *d
     return XQC_OK;
 }
 
+//FEC 控制器管理-初始化发送参数
 xqc_int_t
 xqc_fec_ctl_init_send_params(xqc_connection_t *conn, uint8_t bm_idx)
 {
@@ -846,6 +863,10 @@ xqc_fec_ctl_init_recv_params(xqc_fec_ctl_t *fec_ctl, uint64_t block_id)
     return XQC_OK;
 }
 
+/**
+ *  FEC方案协商
+ *  根据协商结果调用 xqc_set_valid_encoder_scheme_cb() 注册编码器回调（如 XOR、Reed-Solomon、Packet-Mask、未来的喷泉码等）
+ */
 xqc_int_t
 xqc_negotiate_fec_schemes(xqc_connection_t *conn, xqc_transport_params_t params)
 {
@@ -884,7 +905,7 @@ xqc_negotiate_fec_schemes(xqc_connection_t *conn, xqc_transport_params_t params)
             xqc_log(conn->log, XQC_LOG_DEBUG, "|quic_fec|negotiate fec encoder schemes failed.");
             goto set_decoder;
         }
-        // set valid encoder scheme
+        //设置有效的编码方案（注册FEC对应接口实现，XOR、Reed-Solomon、Packet-Mask等）
         ret = xqc_set_valid_encoder_scheme_cb(&conn->conn_settings.fec_callback, encode_scheme);
         if (ret != XQC_OK) {
             ls->enable_encode_fec = 0;
@@ -949,6 +970,7 @@ end:
     }
     return ret;
 }
+//符号管理-按序插入源符号
 xqc_int_t
 xqc_insert_src_symbol_by_seq(xqc_connection_t *conn, xqc_list_head_t *symbol_list, 
     uint64_t block_id, uint64_t symbol_idx, xqc_int_t *blk_output,
@@ -1200,7 +1222,7 @@ xqc_update_rpr_symbol_mask_on_rpr(xqc_list_head_t *head, xqc_fec_rpr_syb_t *rpr_
     }
 }
 
-
+//符号管理-构建源符号
 xqc_fec_src_syb_t *
 xqc_build_src_symbol(xqc_connection_t *conn, uint64_t block_id, uint64_t symbol_idx,
     unsigned char *symbol, xqc_int_t symbol_size)
@@ -1228,7 +1250,7 @@ xqc_build_src_symbol(xqc_connection_t *conn, uint64_t block_id, uint64_t symbol_
     return src_symbol;
 }
 
-
+//符号管理-构建修复符号
 xqc_fec_rpr_syb_t *
 xqc_build_rpr_symbol(xqc_connection_t *conn, xqc_fec_rpr_syb_t *tmp_rpr_symbol)
 {
@@ -1314,7 +1336,7 @@ xqc_if_rpr_blk_exists(xqc_fec_ctl_t *fec_ctl, uint64_t block_id)
     return XQC_FALSE;
 }
 
-
+//FEC 解码处理-处理源符号
 xqc_int_t
 xqc_process_src_symbol(xqc_connection_t *conn, uint64_t block_id, uint64_t symbol_idx,
     unsigned char *symbol, xqc_int_t symbol_size)
@@ -1366,7 +1388,7 @@ xqc_process_src_symbol(xqc_connection_t *conn, uint64_t block_id, uint64_t symbo
     return XQC_OK;
 } 
 
-
+//FEC 解码处理-处理修复符号
 xqc_int_t
 xqc_process_rpr_symbol(xqc_connection_t *conn, xqc_fec_rpr_syb_t *tmp_rpr_symbol)
 {
@@ -1450,7 +1472,7 @@ xqc_get_symbol_flag(xqc_connection_t *conn, uint64_t block_id)
     }
     return symbol_flag;
 }
-
+//FEC 解码处理-获取符号缓冲区
 xqc_int_t
 xqc_get_symbols_buff(unsigned char **output, xqc_fec_ctl_t *fec_ctl, uint64_t block_id, size_t *size)
 {

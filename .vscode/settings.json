@@ -1,0 +1,7 @@
+{
+  "files.associations": {
+    "xqc_galois_calculation.h": "c",
+    "xqc_packet_mask.h": "c",
+    "xqc_packet_mask_value.h": "c"
+  }
+}

@@ -650,6 +650,8 @@ xqc_connection_t *
 xqc_conn_create(xqc_engine_t *engine, xqc_cid_t *dcid, xqc_cid_t *scid,
     const xqc_conn_settings_t *settings, void *user_data, xqc_conn_type_t type)
 {
+    printf("________________________xqc_conn_create() triggered");
+
     xqc_connection_t *xc = NULL;
 #ifdef XQC_PROTECT_POOL_MEM
     xqc_memory_pool_t *pool = xqc_create_pool(engine->config->conn_pool_size, settings->protect_pool_mem);
@@ -845,7 +847,19 @@ xqc_conn_create(xqc_engine_t *engine, xqc_cid_t *dcid, xqc_cid_t *scid,
     if (xc->conn_settings.enable_encode_fec
         || xc->conn_settings.enable_decode_fec)
     {
+        //若启用FEC，创建 FEC 控制器
+        //FEC 控制器创建后，进行 FEC 方案协商（xqc_negotiate_fec_schemes()，通常在握手/参数协商阶段）
+        //目前沿该条调用链暂未找到xqc_negotiate_fec_schemes()（2.FEC 方案协商与回调注册部分）相关的调用，下注释给出部分解释
         xc->fec_ctl = xqc_fec_ctl_create(xc);
+        /**
+        *main() 负责驱动整个流程，但 FEC 协商是由握手完成、收到远端参数后自动触发的
+        *在 main() 里看不到直接调用 FEC 协商的代码，是因为它被封装在协议事件和回调机制里。
+        *
+        *xqc_conn_set_remote_transport_params() 的调用发生在握手完成、双方参数协商后，不是在连接创建时，而是在收到远端参数、需要协商 FEC 方案时
+        *xqc_conn_create() 只负责本地连接对象和 FEC 控制器的初始化,FEC 方案的协商必须等到双方参数都已知（即握手参数协商完成）才能进行
+        *因此实际发生在 xqc_conn_set_remote_transport_params()里
+       */
+        printf("FEC on, triggered function path: xqc_conn.c -> xqc_conn_create()");
         if (xc->fec_ctl == NULL) {
             xc->conn_settings.enable_encode_fec = 0;
             xc->conn_settings.enable_decode_fec = 0;
@@ -2027,6 +2041,7 @@ xqc_conn_schedule_packets(xqc_connection_t *conn,  xqc_list_head_t *head,
                  || packet_out->po_frame_types & XQC_FRAME_BIT_REPAIR_SYMBOL))
         {
             if (xqc_is_packet_fec_protected(conn, packet_out) == XQC_OK) {
+                //FEC 编码处理
                 xqc_process_fec_protected_packet(conn, packet_out);
                 /* if insert repair packet after current po, update next pointer; */
                 next = pos->next;

@@ -25,6 +25,7 @@ xqc_fec_encoder_check_params(xqc_connection_t *conn, xqc_int_t repair_symbol_num
 
     return XQC_OK;
 }
+// 调用具体的 FEC 编码算法，对应FEC接口实现：src/transport/fec_schemes/(xqc_xor.c等等）
 
 xqc_int_t
 xqc_fec_encoder(xqc_connection_t *conn, unsigned char *input, size_t st_size, uint8_t fec_bm_mode)
@@ -50,7 +51,10 @@ xqc_fec_encoder(xqc_connection_t *conn, unsigned char *input, size_t st_size, ui
                 return -XQC_EMALLOC;
             }
         }
-
+        // 调用具体的 FEC 编码算法，对应FEC接口实现：src/transport/fec_schemes/(xqc_xor.c等等）
+        // 对于 XOR：实际调用 xqc_xor_encode
+        // 对于 Reed-Solomon：实际调用 xqc_reed_solomon_encode
+        // 对于 Packet-Mask：实际调用 xqc_packet_mask_encode
         ret = conn->conn_settings.fec_callback.xqc_fec_encode(conn, input, st_size, repair_symbols_payload_buff, fec_bm_mode);
         if (ret != XQC_OK) {
             xqc_log(conn->log, XQC_LOG_WARN, "|quic_fec|xqc_fec_encoder|fec scheme encode_uni error");

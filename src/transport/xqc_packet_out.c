@@ -1167,11 +1167,13 @@ xqc_fec_encode_queue_insert_send(xqc_packet_out_t *po, xqc_stream_t *stream)
 }
 
 
+//写入流帧
+//检查是否需要 FEC，如果需要则设置 FEC 标记
 int
 xqc_write_stream_frame_to_packet(xqc_connection_t *conn,
-    xqc_stream_t *stream, xqc_pkt_type_t pkt_type, uint8_t fin,
-    const unsigned char *payload, size_t payload_size, 
-    size_t *send_data_written)
+                                 xqc_stream_t *stream, xqc_pkt_type_t pkt_type, uint8_t fin,
+                                 const unsigned char *payload, size_t payload_size,
+                                 size_t *send_data_written)
 {
     xqc_packet_out_t *packet_out;
     int n_written;
@@ -1245,6 +1247,7 @@ xqc_write_stream_frame_to_packet(xqc_connection_t *conn,
     packet_out->po_stream_id = stream->stream_id;
     packet_out->po_stream_offset = stream->stream_send_offset;
 
+    //检查是否需要 FEC，如果需要则设置 FEC 标记
 #ifdef XQC_ENABLE_FEC
     // FEC process source packet on stream level
     if (conn->conn_settings.fec_level == XQC_FEC_STREAM_LEVEL) {
@@ -1257,6 +1260,7 @@ xqc_write_stream_frame_to_packet(xqc_connection_t *conn,
             xqc_fec_encode_queue_insert_send(packet_out, stream);
         }
 
+        //FEC相关数据传输
     } else if (stream->stream_fec_blk_mode != XQC_SLIM_SIZE_REQ && conn->conn_settings.fec_params.fec_encoder_scheme) {
         // FEC tag source packet to be processed on connection level
         packet_out->po_flag |= XQC_POF_USE_FEC;

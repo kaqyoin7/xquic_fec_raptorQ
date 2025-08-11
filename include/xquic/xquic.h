@@ -1071,6 +1071,7 @@ XQC_EXPORT_PUBLIC_API XQC_EXTERN const xqc_reinj_ctl_callback_t xqc_default_rein
 XQC_EXPORT_PUBLIC_API XQC_EXTERN const xqc_reinj_ctl_callback_t xqc_deadline_reinj_ctl_cb;
 XQC_EXPORT_PUBLIC_API XQC_EXTERN const xqc_reinj_ctl_callback_t xqc_dgram_reinj_ctl_cb;
 
+    //FEC接口，不同FEC策略的对应实现：src => transport => fec_schemes；实现对应接口后通过xqc_fec_code_callback_s注册；（例：xqc_xor.c: line 282 - line 288）
 typedef struct xqc_fec_code_callback_s {
     void (*xqc_fec_init)(xqc_connection_t *conn);
     xqc_int_t (*xqc_fec_encode)(xqc_connection_t *conn, unsigned char *unit_data, size_t un_size, unsigned char **outputs,

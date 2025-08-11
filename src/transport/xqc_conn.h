@@ -271,6 +271,7 @@ typedef struct xqc_ping_record_s {
     uint32_t        ref_cnt;
 } xqc_ping_record_t;
 
+//连接对象，内含与当前连接相关的状态和参数，包括 FEC 控制 (fec_ctl)
 struct xqc_connection_s {
 
     xqc_conn_settings_t             conn_settings;

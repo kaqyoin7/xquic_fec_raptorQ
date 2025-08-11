@@ -203,7 +203,10 @@ xqc_h3_connect(xqc_engine_t *engine, const xqc_conn_settings_t *conn_settings,
     const xqc_conn_ssl_config_t *conn_ssl_config, const struct sockaddr *peer_addr,
     socklen_t peer_addrlen, void *user_data)
 {
+    printf("---------------------xqc_h3_connect() triggered");
     xqc_connection_t *conn;
+    //xqc_connect()调用xqc_client_connect()->xqc_client_create_connection()->xqc_conn_create()
+    //xqc_conn_create()处若启用 FEC，调用 xqc_fec_ctl_create() 创建 FEC 控制器
     conn = xqc_client_connect(engine, conn_settings, token, token_len, server_host, no_crypto_flag, 
                               conn_ssl_config, xqc_h3_alpn[conn_settings->proto_version], peer_addr,
                               peer_addrlen, user_data);

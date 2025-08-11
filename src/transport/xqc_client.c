@@ -22,9 +22,9 @@ xqc_client_connect(xqc_engine_t *engine, const xqc_conn_settings_t *conn_setting
     const xqc_conn_ssl_config_t *conn_ssl_config, const char *alpn, 
     const struct sockaddr *peer_addr, socklen_t peer_addrlen, void *user_data)
 {
+    printf("________________________xqc_client_connect() teiggered");
     xqc_cid_t dcid;
     xqc_cid_t scid;
-
     if (NULL == conn_ssl_config) {
         xqc_log(engine->log, XQC_LOG_ERROR,
                 "|xqc_conn_ssl_config is NULL|");
@@ -44,6 +44,7 @@ xqc_client_connect(xqc_engine_t *engine, const xqc_conn_settings_t *conn_setting
                 "|generate dcid or scid error|");
         return NULL;
     }
+
 
     xqc_connection_t *xc = xqc_client_create_connection(engine, dcid, scid, conn_settings,
                                                         server_host, no_crypto_flag,
@@ -104,12 +105,14 @@ xqc_connect(xqc_engine_t *engine, const xqc_conn_settings_t *conn_settings,
     const xqc_conn_ssl_config_t *conn_ssl_config, const struct sockaddr *peer_addr,
     socklen_t peer_addrlen, const char *alpn, void *user_data)
 {
+    printf("---------------------xqc_connect() triggered");
     xqc_connection_t *conn;
 
     if (NULL == alpn || strlen(alpn) > XQC_MAX_ALPN_LEN) {
         return NULL;
     }
-
+    //xqc_connect()调用xqc_client_connect()->xqc_client_create_connection()->xqc_conn_create()
+    //xqc_conn_create()处若启用 FEC，调用 xqc_fec_ctl_create() 创建 FEC 控制器
     conn = xqc_client_connect(engine, conn_settings, token, token_len, server_host, no_crypto_flag, 
                               conn_ssl_config, alpn, peer_addr, peer_addrlen, user_data);
     if (conn) {
@@ -215,6 +218,8 @@ xqc_client_create_connection(xqc_engine_t *engine, xqc_cid_t dcid, xqc_cid_t sci
     const xqc_conn_settings_t *settings, const char *server_host, int no_crypto_flag,
     const xqc_conn_ssl_config_t *conn_ssl_config, const char *alpn, void *user_data)
 {
+    printf("________________________xqc_client_create_connection() teiggered");
+
     xqc_int_t               ret;
     xqc_transport_params_t  tp;
     xqc_trans_settings_t   *local_settings;

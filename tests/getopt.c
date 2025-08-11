@@ -129,11 +129,14 @@ int getopt(int nargc, char *const *nargv, const char *ostr)
  * (Internally, this means we must be sure to reset "place" to EMSG before
  * returning -1.)
  */
+//解析命令行参数，支持 短选项（如 -p 8080）和 GNU 风格长选项（如 --port=8080）
+//从 argv[] 中逐项提取命令行参数，返回参数字符（如 'p'），同时将选项参数值放入全局变量 optarg 中，供程序使用。
 int
 getopt_long(int argc, char *const argv[],
             const char *optstring,
             const struct option * longopts, int *longindex)
 {
+    //记录当前解析参数的位置
     static char *place = EMSG;  /* option letter processing */
     char	   *oli;            /* option letter list index */
 

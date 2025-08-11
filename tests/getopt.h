@@ -23,13 +23,13 @@ extern int   optopt;
 #endif   /* HAVE_GETOPT_H */
 
 #ifndef HAVE_STRUCT_OPTION
-struct option
-{
-    const char *name;
-    int         has_arg;
-    int        *flag;
-    int         val;
+struct option {
+    const char *name;    // 参数名称，如 --fec_encoder
+    int has_arg;         // 是否需要参数：no_argument/required_argument/optional_argument
+    int *flag;           // 设置一个标志变量指针，非 NULL 时，val 值将被赋给 *flag
+    int val;             // 若 flag 为 NULL，getopt_long 返回该值，否则忽略
 };
+
 #define no_argument 0
 #define required_argument 1
 #define optional_argument 2
