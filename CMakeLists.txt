@@ -95,6 +95,9 @@ endif()
 
 include(CMakeOptions.txt)
 
+# FEC Fountain option
+option(XQC_ENABLE_FOUNTAIN "Enable Fountain Code FEC" OFF)
+
 if (XQC_BUILD_OPENSSL)
     if(${SSL_TYPE} MATCHES "boringssl")
         if (XQC_OPENSSL_SMALL)
@@ -245,6 +248,19 @@ if(XQC_ENABLE_PKM)
         FEC_FRAMEWORK_SOURCE
         ${FEC_FRAMEWORK_SOURCE}
         "src/transport/fec_schemes/xqc_packet_mask.c"
+    )
+endif()
+
+if(XQC_ENABLE_FOUNTAIN)
+    set(
+        FEC_FRAMEWORK_SOURCE
+        ${FEC_FRAMEWORK_SOURCE}
+        "src/transport/fec_schemes/xqc_fountain.c"
+        "src/transport/fec_schemes/raptorQ_impl_c/Encoder.c"
+        "src/transport/fec_schemes/raptorQ_impl_c/Decoder.c"
+        "src/transport/fec_schemes/raptorQ_impl_c/Symbol.c"
+        "src/transport/fec_schemes/raptorQ_impl_c/Generators.c"
+        "src/transport/fec_schemes/raptorQ_impl_c/Helper.c"
     )
 endif()
 

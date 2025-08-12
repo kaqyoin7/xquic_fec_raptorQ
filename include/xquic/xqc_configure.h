@@ -1,6 +1,6 @@
 /* the configured options and settings for xquic */
-#define xquic_VERSION_MAJOR 0
-#define xquic_VERSION_MINOR 1
+#define xquic_VERSION_MAJOR @xquic_VERSION_MAJOR @
+#define xquic_VERSION_MINOR @xquic_VERSION_MINOR @
 
 /* #undef XQC_ENABLE_BBR2 */
 /* #undef XQC_ENABLE_RENO */
@@ -14,3 +14,4 @@
 /* #undef XQC_ENABLE_XOR */
 /* #undef XQC_ENABLE_RSC */
 /* #undef XQC_ENABLE_PKM */
+/* #undef XQC_ENABLE_FOUNTAIN */

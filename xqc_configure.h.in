@@ -1,6 +1,6 @@
 /* the configured options and settings for xquic */
-#define xquic_VERSION_MAJOR @xquic_VERSION_MAJOR@
-#define xquic_VERSION_MINOR @xquic_VERSION_MINOR@
+#define xquic_VERSION_MAJOR @xquic_VERSION_MAJOR @
+#define xquic_VERSION_MINOR @xquic_VERSION_MINOR @
 
 #cmakedefine XQC_ENABLE_BBR2
 #cmakedefine XQC_ENABLE_RENO
@@ -14,3 +14,4 @@
 #cmakedefine XQC_ENABLE_XOR
 #cmakedefine XQC_ENABLE_RSC
 #cmakedefine XQC_ENABLE_PKM
+#cmakedefine XQC_ENABLE_FOUNTAIN
