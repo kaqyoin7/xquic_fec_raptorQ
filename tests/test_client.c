@@ -4574,8 +4574,10 @@ int main(int argc, char *argv[])
     uint64_t rate_limit = 0;                     // 速率限制
     char conn_options[XQC_CO_STR_MAX_LEN] = {0}; // 连接选项字符串
     int g_close_red_redundancy = 0;              // 是否关闭dgram冗余
-    xqc_fec_schemes_e fec_encoder_scheme = 11;   // FEC编码方案，默认XOR
-    xqc_fec_schemes_e fec_decoder_scheme = 11;   // FEC解码方案，默认XOR
+    // xqc_fec_schemes_e fec_encoder_scheme = 11;   // FEC编码方案，默认XOR
+    // xqc_fec_schemes_e fec_decoder_scheme = 11;   // FEC解码方案，默认XOR
+    xqc_fec_schemes_e fec_encoder_scheme = 13;   // FEC编码方案，Fountain
+    xqc_fec_schemes_e fec_decoder_scheme = 13;   // FEC解码方案，Fountain
     uint8_t c_qlog_disable = 0;                  // 是否禁用qlog
     char c_qlog_importance = 'r';                // qlog重要性等级
     xqc_usec_t fec_timeout = 0;                  // FEC超时时间

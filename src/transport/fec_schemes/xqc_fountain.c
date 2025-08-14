@@ -285,6 +285,8 @@ xqc_int_t xqc_fountain_encode(xqc_connection_t *conn,
                               unsigned char **outputs,
                               uint8_t fec_bm_mode)
 {
+    printf("xqc_fountain_encode() triggered!");
+
     if (st_size > XQC_MAX_SYMBOL_SIZE)
     {
         return -XQC_EFEC_SYMBOL_ERROR;
@@ -387,6 +389,7 @@ xqc_int_t xqc_fountain_decode(xqc_connection_t *conn,
                               size_t *output_size,
                               xqc_int_t block_idx)
 {
+    printf("xqc_fountain_decode() triggered!");
    //获取block context
     xqc_fountain_block_ctx_t *ctx = xqc_fountain_get_or_create_block_ctx(conn, block_idx, 0);
     if (!ctx)
