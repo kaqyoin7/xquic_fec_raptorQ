@@ -9,6 +9,7 @@
 #include <xquic/xquic.h>
 #include <xquic/xqc_errno.h>
 #include <xquic/xquic_typedef.h>
+#include <stdbool.h>
 
 #include "src/transport/xqc_conn.h"
 
