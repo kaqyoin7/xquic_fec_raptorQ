@@ -11,7 +11,7 @@
 #include "src/transport/xqc_packet_out.h"
 #include "xqc_common_test.h"
 
-xqc_fec_schemes_e fec_schemes[XQC_FEC_MAX_SCHEME_NUM] = {0, XQC_XOR_CODE, XQC_REED_SOLOMON_CODE, XQC_PACKET_MASK_CODE};
+xqc_fec_schemes_e fec_schemes[XQC_FEC_MAX_SCHEME_NUM] = {0, XQC_XOR_CODE, XQC_REED_SOLOMON_CODE, XQC_PACKET_MASK_CODE, XQC_RAPTORQ_CODE};
 
 void
 xqc_test_fec_scheme_setter()

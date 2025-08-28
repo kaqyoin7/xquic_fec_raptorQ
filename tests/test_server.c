@@ -2504,7 +2504,7 @@ int main(int argc, char *argv[]) {
     if (g_enable_fec) {
         xqc_fec_params_t fec_params;
         memset(&fec_params, 0, sizeof(xqc_fec_params_t));
-        xqc_fec_schemes_e fec_schemes[XQC_FEC_MAX_SCHEME_NUM] = {XQC_XOR_CODE, XQC_REED_SOLOMON_CODE, XQC_PACKET_MASK_CODE};
+        xqc_fec_schemes_e fec_schemes[XQC_FEC_MAX_SCHEME_NUM] = {XQC_XOR_CODE, XQC_REED_SOLOMON_CODE, XQC_PACKET_MASK_CODE, XQC_RAPTORQ_CODE};
         for (xqc_int_t i = 0; i < 3; i++) {
             fec_params.fec_encoder_schemes[i] = fec_schemes[i];
             fec_params.fec_decoder_schemes[i] = fec_schemes[i];

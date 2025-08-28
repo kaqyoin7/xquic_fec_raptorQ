@@ -4420,6 +4420,9 @@ xqc_client_set_fec_scheme(uint64_t in, xqc_fec_schemes_e *out)
     case XQC_PACKET_MASK_CODE:
         *out = XQC_PACKET_MASK_CODE;
         return XQC_OK;
+    case XQC_RAPTORQ_CODE:
+        *out = XQC_RAPTORQ_CODE;
+        return XQC_OK;
     default:
         break;
     }

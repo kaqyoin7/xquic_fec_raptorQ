@@ -345,6 +345,7 @@ xqc_send_repair_packets(xqc_connection_t *conn, xqc_fec_schemes_e scheme, xqc_li
     {
     case XQC_REED_SOLOMON_CODE:
     case XQC_XOR_CODE:
+    case XQC_RAPTORQ_CODE:
         /* Generate repair packets */
         ret = xqc_write_repair_packets(conn, fss_esi, prev, repair_num, fec_bm_mode);
         if (ret != XQC_OK)
