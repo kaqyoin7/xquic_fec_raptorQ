@@ -146,7 +146,7 @@ xqc_xor_code_one_symbol(unsigned char *input, unsigned char *outputs,
 xqc_int_t
 xqc_xor_decode(xqc_connection_t *conn, unsigned char **outputs, size_t *output_size, xqc_int_t block_idx)
 {
-    printf("FEC scheme XOR decode enabled!!!!!!! src/transport/fec_schemes");
+    printf("xqc_xor_decode() triggered!");
 
     xqc_int_t i, j, ret, recv_repair_symbols_num, output_len, block_mod;
     xqc_usec_t now, diff_time;
@@ -248,7 +248,7 @@ xqc_int_t
 xqc_xor_encode(xqc_connection_t *conn, unsigned char *stream, size_t st_size, unsigned char **outputs,
                uint8_t fec_bm_mode)
 {
-    printf("FEC scheme XOR encode enabled!!!!!!! src/transport/fec_schemes");
+    printf("xqc_xor_encode() triggered!");
     size_t tmp_size;
     xqc_int_t ret;
 
