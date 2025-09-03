@@ -135,8 +135,8 @@ xqc_xor_code_one_symbol(unsigned char *input, unsigned char *outputs,
 /**
  * @brief XOR FEC 解码函数
  * @param conn 连接对象
- * @param outputs 输出数据指针数组（只用 outputs[0]）
- * @param output_size 输出数据长度
+ * @param outputs 用于写回恢复结果（只用 outputs[0]）
+ * @param output_size 恢复出的数据长度（等于冗余符号长度）
  * @param block_idx 需要恢复的块编号
  * @return XQC_OK 成功，负值失败
  *
@@ -156,7 +156,9 @@ xqc_xor_decode(xqc_connection_t *conn, unsigned char **outputs, size_t *output_s
 
     *output_size = 0;
     ret = -XQC_EFEC_SYMBOL_ERROR;
+    //已收“源符号”链表
     fec_recv_src_syb_list = &conn->fec_ctl->fec_recv_src_syb_list;
+    //已收“冗余符号”链表
     fec_recv_rpr_syb_list = &conn->fec_ctl->fec_recv_rpr_syb_list;
     block_mod = conn->conn_settings.fec_params.fec_blk_log_mod;
 

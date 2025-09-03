@@ -5818,7 +5818,6 @@ xqc_conn_tls_transport_params_cb(const uint8_t *tp, size_t len, void *user_data)
     if (conn->conn_settings.enable_encode_fec 
         || conn->conn_settings.enable_decode_fec) 
     {
-        printf("XQC_ENABLE_FEC ON, path:src\transport\xqc_conn.c");
         // update fec settings according to remote params
         xqc_check_fec_trans_param(conn, params);
         ret = xqc_negotiate_fec_schemes(conn, params);
