@@ -263,9 +263,17 @@ void xqc_fountain_cleanup_connection(xqc_connection_t *conn)
 
 void xqc_fountain_init(xqc_connection_t *conn)
 {
+    printf("xqc_fountain_init() triggered!");
+    if (conn->fec_ctl == NULL)
+    {
+        xqc_log(conn->log, XQC_LOG_ERROR, "|quic_fec|fail to malloc space for fec_ctl");
+        return;
+    }
+
     //设置默认 block 模式下的默认修复符号数量
     uint32_t r = xqc_fountain_calc_repair_num(conn, XQC_DEFAULT_SIZE_REQ);
     conn->fec_ctl->fec_send_required_repair_num[XQC_DEFAULT_SIZE_REQ] = r;
+    return;
 }
 
 void xqc_fountain_init_one(xqc_connection_t *conn, uint8_t bm_idx)

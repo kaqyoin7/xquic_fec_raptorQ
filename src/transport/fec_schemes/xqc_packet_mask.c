@@ -235,6 +235,7 @@ xqc_int_t
 xqc_packet_mask_encode(xqc_connection_t *conn, unsigned char *stream, size_t st_size, unsigned char **outputs,
                        uint8_t fec_bm_mode)
 {
+	printf("xqc_packet_mask_encode() triggered!");
     xqc_int_t ret;
     if (st_size > XQC_MAX_SYMBOL_SIZE)
     {

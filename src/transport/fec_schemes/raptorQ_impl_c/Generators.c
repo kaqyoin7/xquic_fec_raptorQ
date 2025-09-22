@@ -1048,34 +1048,34 @@ void Generators_PrintMatrix(Generators *g)
 
 void Generators_ToString(Generators *g)
 {
-    printf("K=%d\n", g->K);
-    printf("T=%d\n", g->T);
-    printf("H=%d\n", g->H);
-    printf("S=%d\n", g->S);
-    printf("L=%d\n", g->L);
-    printf("N=%d\n", g->N);
-    printf("M=%d\n", g->M);
-    printf("K1=%d\n", g->K1);
-    printf("W=%d\n", g->W);
-    printf("P=%d\n", g->P);
-    printf("B=%d\n", g->B);
-    printf("U=%d\n", g->U);
-    printf("P1=%d\n", g->P1);
+//    printf("K=%d\n", g->K);
+//    printf("T=%d\n", g->T);
+//    printf("H=%d\n", g->H);
+//    printf("S=%d\n", g->S);
+//    printf("L=%d\n", g->L);
+//    printf("N=%d\n", g->N);
+//    printf("M=%d\n", g->M);
+//    printf("K1=%d\n", g->K1);
+//    printf("W=%d\n", g->W);
+//    printf("P=%d\n", g->P);
+//    printf("B=%d\n", g->B);
+//    printf("U=%d\n", g->U);
+//    printf("P1=%d\n", g->P1);
+//
+//    printf("Tuples:\n");
+//    for (int i = 0; i < g->L; i++)
+//    {
+//        printf("Tuple %d d,a,b=%d,%d,%d,", i, g->Tuples[i].d, g->Tuples[i].a, g->Tuples[i].b);
+//        printf(" d1,a1,b1=%d,%d,%d\n", g->Tuples[i].d1, g->Tuples[i].a1, g->Tuples[i].b1);
+//    }
 
-    printf("Tuples:\n");
-    for (int i = 0; i < g->L; i++)
-    {
-        printf("Tuple %d d,a,b=%d,%d,%d,", i, g->Tuples[i].d, g->Tuples[i].a, g->Tuples[i].b);
-        printf(" d1,a1,b1=%d,%d,%d\n", g->Tuples[i].d1, g->Tuples[i].a1, g->Tuples[i].b1);
-    }
-
-    printf("The generation matrix:\n");
-    for (int i = 0; i < g->M; i++)
-    {
-        for (int j = 0; j < g->L; j++)
-            printf("%2x ", g->A[i][j].val);
-        printf("\n");
-    }
+//    printf("The generation matrix:\n");
+//    for (int i = 0; i < g->M; i++)
+//    {
+//        for (int j = 0; j < g->L; j++)
+//            printf("%2x ", g->A[i][j].val);
+//        printf("\n");
+//    }
 }
 
 /* section 5.7.2 */
