@@ -1402,10 +1402,16 @@ xqc_path_perf_class_t
 xqc_path_get_perf_class(xqc_path_ctx_t *path)
 {
     xqc_connection_t *conn = path->parent_conn;
+    // 2. 获取调度器参数阈值
     xqc_scheduler_params_t *param = &conn->conn_settings.scheduler_params;
+    // 1. 获取路径指标
+    // 路径SRTT
     xqc_usec_t path_srtt = xqc_send_ctl_get_srtt(path->path_send_ctl);
+    // 连接最小SRTT
     xqc_usec_t min_srtt = xqc_conn_get_min_srtt(path->parent_conn, 0);
+    // 路径带宽
     uint64_t path_bw = xqc_send_ctl_get_est_bw(path->path_send_ctl);
+    // 丢包率
     double loss_rate = xqc_path_recent_loss_rate(path);
 
     xqc_log(conn->log, XQC_LOG_DEBUG, "|conn:%p|path_id:%ui|"
@@ -1414,7 +1420,8 @@ xqc_path_get_perf_class(xqc_path_ctx_t *path)
             conn, path->path_id, path_srtt, min_srtt, path_bw, loss_rate,
             path->path_send_ctl->ctl_pto_count);
 
-    // low 
+    // low
+    //RTT超过高阈值\PTO次数超过阈值\丢包率超过高阈值
     if (path_srtt > param->rtt_us_thr_high
         || path->path_send_ctl->ctl_pto_count >= param->pto_cnt_thr
         || loss_rate > param->loss_percent_thr_high) 

@@ -84,13 +84,22 @@ xqc_minrtt_scheduler_get_path(void *scheduler,
             *cc_blocked = XQC_FALSE;
         }
 
-        path_srtt = xqc_send_ctl_get_srtt(path->path_send_ctl);
+        /* Use comprehensive path score instead of only RTT */
+        double path_score = xqc_calculate_path_score(path);
+        double best_score = 0.0;
+        
+        if (best_path[path_class] != NULL) {
+            best_score = xqc_calculate_path_score(best_path[path_class]);
+        }
         
         if (best_path[path_class] == NULL 
-            || path_srtt < best_path[path_class]->path_send_ctl->ctl_srtt)
+            || path_score > best_score)
         {
             best_path[path_class] = path;
         }
+        
+        /* Keep path_srtt for logging compatibility */
+        path_srtt = xqc_send_ctl_get_srtt(path->path_send_ctl);
 
 skip_path:
         xqc_log(conn->log, XQC_LOG_DEBUG, 
