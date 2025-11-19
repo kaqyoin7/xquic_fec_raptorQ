@@ -7,6 +7,7 @@
 #include <event2/event.h>
 #include <memory.h>
 #include <errno.h>
+#include <ctype.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -23,6 +24,7 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
+#include <ifaddrs.h>
 #include <getopt.h>
 #else
 #pragma comment(lib, "ws2_32.lib")
@@ -289,6 +291,160 @@ int hsk_completed = 0;
 int g_periodically_request = 0;
 
 static uint64_t last_recv_ts = 0;
+
+#if !defined(XQC_SYS_WINDOWS)
+static int
+xqc_get_interface_by_fd(int fd, char *ifname, size_t len)
+{
+    if (len == 0) {
+        return -1;
+    }
+
+    struct sockaddr_storage addr;
+    socklen_t addrlen = sizeof(addr);
+    if (getsockname(fd, (struct sockaddr *)&addr, &addrlen) != 0) {
+        return -1;
+    }
+
+    struct ifaddrs *ifaddr = NULL;
+    if (getifaddrs(&ifaddr) != 0) {
+        return -1;
+    }
+
+    int ret = -1;
+    for (struct ifaddrs *ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr) {
+            continue;
+        }
+
+        if (ifa->ifa_addr->sa_family != addr.ss_family) {
+            continue;
+        }
+
+        if (addr.ss_family == AF_INET) {
+            struct sockaddr_in *a = (struct sockaddr_in *)&addr;
+            struct sockaddr_in *b = (struct sockaddr_in *)ifa->ifa_addr;
+            if (a->sin_addr.s_addr == b->sin_addr.s_addr) {
+                strncpy(ifname, ifa->ifa_name, len - 1);
+                ifname[len - 1] = '\0';
+                ret = 0;
+                break;
+            }
+        } else if (addr.ss_family == AF_INET6) {
+            struct sockaddr_in6 *a6 = (struct sockaddr_in6 *)&addr;
+            struct sockaddr_in6 *b6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+            if (memcmp(&a6->sin6_addr, &b6->sin6_addr, sizeof(struct in6_addr)) == 0) {
+                strncpy(ifname, ifa->ifa_name, len - 1);
+                ifname[len - 1] = '\0';
+                ret = 0;
+                break;
+            }
+        }
+    }
+
+    freeifaddrs(ifaddr);
+    return ret;
+}
+
+static int
+xqc_get_socket_port(int fd, uint16_t *port)
+{
+    struct sockaddr_storage addr;
+    socklen_t addrlen = sizeof(addr);
+    if (getsockname(fd, (struct sockaddr *)&addr, &addrlen) != 0) {
+        return -1;
+    }
+
+    if (addr.ss_family == AF_INET) {
+        *port = ntohs(((struct sockaddr_in *)&addr)->sin_port);
+        return 0;
+    } else if (addr.ss_family == AF_INET6) {
+        *port = ntohs(((struct sockaddr_in6 *)&addr)->sin6_port);
+        return 0;
+    }
+
+    return -1;
+}
+
+static int
+xqc_tc_query_netem(const char *ifname, double *delay_ms, double *loss_pct)
+{
+    if (ifname == NULL || ifname[0] == '\0') {
+        return -1;
+    }
+
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "tc qdisc show dev %s 2>/dev/null", ifname);
+    FILE *fp = popen(cmd, "r");
+    if (fp == NULL) {
+        return -1;
+    }
+
+    int found = 0;
+    char line[512];
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        if (strstr(line, "netem") == NULL) {
+            continue;
+        }
+        found = 1;
+
+        char *delay_token = strstr(line, "delay");
+        if (delay_token) {
+            delay_token += strlen("delay");
+            while (*delay_token == ' ') delay_token++;
+            double value = strtod(delay_token, NULL);
+            if (strstr(delay_token, "us")) {
+                value /= 1000.0;
+            }
+            *delay_ms = value;
+        }
+
+        char *loss_token = strstr(line, "loss");
+        if (loss_token) {
+            loss_token += strlen("loss");
+            while (*loss_token == ' ') loss_token++;
+            *loss_pct = strtod(loss_token, NULL);
+        }
+    }
+
+    pclose(fp);
+    return found ? 0 : -1;
+}
+
+static void
+xqc_log_tc_for_socket(int fd, const char *interface_hint, const char *tag)
+{
+    char ifname[IFNAMSIZ] = {0};
+    if (interface_hint && interface_hint[0]) {
+        strncpy(ifname, interface_hint, sizeof(ifname) - 1);
+    } else if (xqc_get_interface_by_fd(fd, ifname, sizeof(ifname)) != 0) {
+        snprintf(ifname, sizeof(ifname), "unknown");
+    }
+
+    uint16_t port = 0;
+    if (xqc_get_socket_port(fd, &port) != 0) {
+        port = 0;
+    }
+
+    double delay_ms = -1.0;
+    double loss_pct = -1.0;
+    if (xqc_tc_query_netem(ifname, &delay_ms, &loss_pct) == 0) {
+        printf("[tc]|socket:%s|if:%s|port:%u|delay_ms:%.3f|loss_pct:%.3f|\n",
+               tag, ifname, port, delay_ms, loss_pct);
+    } else {
+        printf("[tc]|socket:%s|if:%s|port:%u|tc_info:unavailable|\n",
+               tag, ifname, port);
+    }
+}
+#else
+static void
+xqc_log_tc_for_socket(int fd, const char *interface_hint, const char *tag)
+{
+    (void)fd;
+    (void)interface_hint;
+    (void)tag;
+}
+#endif
 
 /*
  CDF file format:
@@ -1609,6 +1765,8 @@ xqc_client_create_socket(int type,
     }
 #endif
 
+    xqc_log_tc_for_socket(fd, interface_type, "conn_socket");
+
     return fd;
 
 err:
@@ -1677,6 +1835,9 @@ xqc_client_create_path_socket(xqc_user_path_t *path,
         return XQC_ERROR;
     }
 #ifndef XQC_SYS_WINDOWS
+    xqc_log_tc_for_socket(path->path_fd, path_interface, "mp_path");
+#endif
+#ifndef XQC_SYS_WINDOWS
     if (path_interface != NULL && xqc_client_bind_to_interface(path->path_fd, path_interface) < 0)
     {
         printf("|xqc_client_bind_to_interface error|");
@@ -1692,6 +1853,9 @@ xqc_client_create_path_socket(xqc_user_path_t *path,
             printf("|xqc_client_create_path_socket error|");
             return XQC_ERROR;
         }
+#ifndef XQC_SYS_WINDOWS
+        xqc_log_tc_for_socket(path->rebinding_path_fd, path_interface, "mp_rebinding_path");
+#endif
     }
 #endif
 
