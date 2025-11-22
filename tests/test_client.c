@@ -293,6 +293,7 @@ int g_periodically_request = 0;
 static uint64_t last_recv_ts = 0;
 
 #if !defined(XQC_SYS_WINDOWS)
+//根据 socket fd 反查所在网卡
 static int
 xqc_get_interface_by_fd(int fd, char *ifname, size_t len)
 {
@@ -345,7 +346,7 @@ xqc_get_interface_by_fd(int fd, char *ifname, size_t len)
     freeifaddrs(ifaddr);
     return ret;
 }
-
+//获取本地端口号
 static int
 xqc_get_socket_port(int fd, uint16_t *port)
 {
@@ -365,7 +366,7 @@ xqc_get_socket_port(int fd, uint16_t *port)
 
     return -1;
 }
-
+//通过 tc qdisc show dev <iface> 解析 delay、loss
 static int
 xqc_tc_query_netem(const char *ifname, double *delay_ms, double *loss_pct)
 {
@@ -410,7 +411,7 @@ xqc_tc_query_netem(const char *ifname, double *delay_ms, double *loss_pct)
     pclose(fp);
     return found ? 0 : -1;
 }
-
+//打印网卡延迟、丢包率
 static void
 xqc_log_tc_for_socket(int fd, const char *interface_hint, const char *tag)
 {
@@ -1681,6 +1682,7 @@ xqc_client_mp_write_mmsg(uint64_t path_id,
 }
 #endif
 
+//将fd(socket的文件file descriptor)绑定到指定网口，保证该 socket 的出站流量走该网络设备（需要 root 权限或相应能力）
 static int
 xqc_client_bind_to_interface(int fd, const char *interface_name)
 {
@@ -1731,6 +1733,7 @@ xqc_client_create_socket(int type,
 #endif
 
     size = 1 * 1024 * 1024;
+    //setsockopt():将fd(socket的file descriptor)绑定到指定网卡，需要root权限
     if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(int)) < 0)
     {
         printf("setsockopt failed, errno: %d\n", get_sys_errno());
@@ -4939,8 +4942,7 @@ int main(int argc, char *argv[])
         case 'i': /* 多路径接口 */
             printf("option multi-path interface: %s\n", optarg);
             memset(g_multi_interface[g_multi_interface_cnt], 0, XQC_DEMO_INTERFACE_MAX_LEN);
-            snprintf(g_multi_interface[g_multi_interface_cnt],
-                     XQC_DEMO_INTERFACE_MAX_LEN, optarg);
+            snprintf(g_multi_interface[g_multi_interface_cnt],XQC_DEMO_INTERFACE_MAX_LEN, optarg);
             ++g_multi_interface_cnt;
             break;
         case 'V': /* 证书校验 */
@@ -5673,10 +5675,60 @@ int main(int argc, char *argv[])
             }
         }
 
-        // 权宜之计，，
-        g_client_path[0].path_id = 0;
-        g_client_path[0].is_in_used = 1;
-        user_conn->fd = g_client_path[0].path_fd;
+        // // 权宜之计，，
+        // g_client_path[0].path_id = 0;
+        // g_client_path[0].is_in_used = 1;
+        // user_conn->fd = g_client_path[0].path_fd;
+
+        if (g_multi_interface_cnt < 1)
+        {
+            printf("Error: multi-path requires one path interfaces or more.\n");
+            return -1;
+        }
+
+        conn_settings.enable_multipath = g_enable_multipath;
+        for (int i = 0; i < g_multi_interface_cnt; ++i)
+        {
+            if (xqc_client_create_path(&g_client_path[i], g_multi_interface[i], user_conn) != XQC_OK)
+            {
+                printf("xqc_client_create_path %d error\n", i);
+                return 0;
+            }
+        }
+
+        int best_idx = 0;
+        double best_loss = 1e9;
+        double best_delay = 1e18;
+
+        for (int i = 0; i < g_multi_interface_cnt; ++i) {
+            double delay_ms = -1.0, loss_pct = -1.0;
+            int tc_ret = xqc_tc_query_netem(g_multi_interface[i], &delay_ms, &loss_pct);
+            if (tc_ret == 0) {
+                printf("[tc]|interface[%d]=%s: tc delay_ms=%.3fms, loss_pct=%.3f%%\n",
+                       i, g_multi_interface[i], delay_ms, loss_pct);
+            } else {
+                /* tc 信息不可用：把丢包率设为一个很大值，使其尽量不被选中 */
+                printf("[tc]|interface[%d]=%s: tc info unavailable, treat loss as large\n",
+                       i, g_multi_interface[i]);
+                loss_pct = 1000.0;
+                delay_ms = 1e12;
+            }
+
+            /* 优先选丢包率更低的；若丢包率相同，则选延迟更小的 */
+            if (loss_pct < best_loss || (loss_pct == best_loss && delay_ms < best_delay)) {
+                best_idx = i;
+                best_loss = loss_pct;
+                best_delay = delay_ms;
+            }
+        }
+
+        printf("[tc]|choose interface[%d]=%s as initial path (loss %.3f%%, delay %.3fms)\n",
+               best_idx, g_multi_interface[best_idx], best_loss, best_delay);
+lo
+        /* 标记所选 path 为已使用，并把 user_conn->fd 指向该 path 的 fd 作为初始 socket */
+        g_client_path[best_idx].path_id = 0;      /* 保持与原实现一致：把初始 path_id 设为 0（临时映射） */
+        g_client_path[best_idx].is_in_used = 1;
+        user_conn->fd = g_client_path[best_idx].path_fd;
     }
     else
     {
